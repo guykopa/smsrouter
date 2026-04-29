@@ -1,17 +1,26 @@
 # smsrouter
 
 ![CI](https://github.com/guykopa/smsrouter/actions/workflows/ci.yml/badge.svg)
+![Docs](https://github.com/guykopa/smsrouter/actions/workflows/docs.yml/badge.svg)
 
 Real-time SMS routing engine simulating a Mobile Virtual Network Operator (MVNO) core network component.
 Built with Java 21, Spring Boot 3.2, and Apache Kafka.
+
+**Documentation complète : [guykopa.github.io/smsrouter](https://guykopa.github.io/smsrouter/)**
 
 ## Quick start
 
 ```bash
 git clone https://github.com/guykopa/smsrouter.git && cd smsrouter
 cp .env.example .env
-docker compose -f docker/docker-compose.yml up
+docker compose -f docker/docker-compose.yml --env-file .env up zookeeper kafka kafka-ui -d
+./mvnw spring-boot:run
 ```
+
+| Service | URL |
+|---------|-----|
+| API | `http://localhost:8080` |
+| Kafka UI | `http://localhost:8090` |
 
 ## Send an SMS
 
@@ -37,6 +46,7 @@ curl -s -X POST http://localhost:8080/api/sms/send \
   -H "Content-Type: application/json" \
   -d '{"from":"+33612345678","to":"+99999999999","text":"Hello"}' | jq .
 # → 422 { "error": "Unroutable", "phoneNumber": "+99999999999" }
+# → SMS_FAILED published to sms.dlq with reason: UNROUTABLE
 ```
 
 ## E.164 routing
@@ -58,13 +68,15 @@ The routing table is loaded from `src/main/resources/routing-table.json` at star
 ```
 POST /api/sms/send
         │
-        ▼ SMS_RECEIVED ──────────────► sms.inbound
+        ▼ SMS_RECEIVED ──────────────────► sms.inbound
         │
-        ▼ SMS_ROUTED ────────────────► sms.events
+        ├─ [routable]
+        │   ▼ SMS_ROUTED ────────────────► sms.events
+        │   ├── SMS_DELIVERED ───────────► sms.events
+        │   └── SMS_FAILED ─────────────► sms.dlq
         │
-        ├── SMS_DELIVERED ───────────► sms.events
-        │
-        └── SMS_FAILED (unroutable) ─► sms.dlq
+        └─ [unroutable]
+            └── SMS_FAILED (UNROUTABLE) ─► sms.dlq
 ```
 
 ## Architecture
@@ -72,7 +84,7 @@ POST /api/sms/send
 Event-Driven Hexagonal Architecture — domain never imports Kafka or Spring.
 
 ```
-REST Controller
+REST Controller / HomeController
       ↓
 SendSmsUseCase          (application)
       ↓
@@ -91,8 +103,18 @@ See `Architecture.md` for the full design rationale.
 ./mvnw clean verify
 ```
 
-- **Unit tests** (15): zero Spring, zero Kafka — fake adapters only
-- **Integration tests** (2): embedded Kafka, full Spring context
+- **Unit tests** (16): zero Spring, zero Kafka — fake adapters only
+- **Integration tests** (3): embedded Kafka, full Spring context
+
+## Documentation
+
+```bash
+# Generate locally
+./mvnw asciidoctor:process-asciidoc
+open target/generated-docs/index.html
+```
+
+Published automatically to GitHub Pages on every push to `main`.
 
 ## Health & metrics
 
