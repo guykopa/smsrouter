@@ -1,0 +1,74 @@
+= Architecture
+
+== Pattern: Event-Driven Hexagonal Architecture
+
+smsrouter separates business routing logic from infrastructure concerns.
+The domain never knows about Kafka, Spring, or HTTP.
+Every state change produces a domain event published asynchronously to Kafka.
+
+== Dependency rule
+
+----
+REST Controller  (inbound adapter)
+       ↓
+SendSmsUseCase   (application)
+       ↓
+SmsRoutingService + PrefixResolver  (domain)
+       ↓ depends on interfaces only
+Ports: SmsPublisherPort, OperatorRegistryPort, SmsDeliveryPort
+       ↑ implemented by
+KafkaSmsPublisher, InMemoryOperatorRegistry, SimulatedSmsDelivery  (outbound adapters)
+----
+
+== SOLID mapping
+
+[cols="1,4", options="header"]
+|===
+| Principle | Application
+| *S* | `PrefixResolver` only resolves operators. `SmsRoutingService` only routes. `KafkaSmsPublisher` only publishes.
+| *O* | Add a new operator registry by implementing `OperatorRegistryPort` — zero existing files modified.
+| *L* | `InMemoryOperatorRegistry` and any future `DatabaseOperatorRegistry` are substitutable wherever `OperatorRegistryPort` is expected.
+| *I* | `SmsPublisherPort`, `OperatorRegistryPort`, `SmsDeliveryPort` are three separate interfaces — no class depends on methods it does not use.
+| *D* | `SmsRoutingService` depends on `OperatorRegistryPort` and `SmsDeliveryPort`, never on concrete adapters.
+|===
+
+== Domain models
+
+All domain models are Java records — immutable, no setters.
+
+[source,java]
+----
+record SmsMessage(UUID id, String from, String to, String text, Instant timestamp) {}
+record Operator(String name, String prefix, String country, int priority) {}
+record RoutingResult(Operator operator, SmsStatus status, long latencyMs) {}
+record SmsEvent(SmsEventType eventType, UUID smsId, Instant timestamp, Map<String,Object> payload) {}
+----
+
+== SMS lifecycle
+
+[source]
+----
+POST /api/sms/send
+        │
+        ▼  publish SMS_RECEIVED → sms.inbound
+        │
+        ▼  SmsRoutingService.resolveOperator()
+        │  publish SMS_ROUTED → sms.events
+        │
+        ▼  SimulatedSmsDelivery.deliver()
+        │
+        ├── SUCCESS → publish SMS_DELIVERED → sms.events
+        │
+        └── FAILURE
+            ├── publish SMS_FAILED → sms.dlq
+            └── reason: DELIVERY_FAILED | UNROUTABLE
+----
+
+== Extension points
+
+To add a new delivery protocol (e.g. SMPP):
+
+. Create `port/SmppGatewayPort.java`
+. Write `unit/SmppDeliveryTest.java` — RED
+. Create `adapter/smpp/SmppDeliveryAdapter.java` — GREEN
+. Zero existing files modified.

@@ -1,0 +1,63 @@
+= Getting Started
+
+== Prerequisites
+
+* Docker & Docker Compose
+* Java 21 (for local development)
+
+== Quick start
+
+[source,bash]
+----
+git clone https://github.com/guykopa/smsrouter.git
+cd smsrouter
+cp .env.example .env
+docker compose -f docker/docker-compose.yml --env-file .env up zookeeper kafka kafka-ui -d
+./mvnw spring-boot:run
+----
+
+The application starts on `http://localhost:8080`.
+Kafka UI is available on `http://localhost:8090`.
+
+== Send your first SMS
+
+[source,bash]
+----
+curl -s -X POST http://localhost:8080/api/sms/send \
+  -H "Content-Type: application/json" \
+  -d '{"from":"+33612345678","to":"+447911123456","text":"Hello"}' | jq .
+----
+
+.Response
+[source,json]
+----
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "status": "DELIVERED",
+  "operator": "EE",
+  "latencyMs": 32
+}
+----
+
+== Available endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET`  | `/` | List available endpoints
+| `POST` | `/api/sms/send` | Submit an SMS for routing
+| `GET`  | `/actuator/health` | Application health
+| `GET`  | `/actuator/metrics` | Available metrics
+|===
+
+== E.164 routing table
+
+[cols="1,2,2", options="header"]
+|===
+| Prefix | Primary operator | Fallback
+| `+44`  | EE               | Vodafone UK
+| `+33`  | Orange FR        | SFR
+| `+49`  | Deutsche Telekom | Vodafone DE
+| `+1`   | AT&T             | T-Mobile US
+| `+39`  | TIM              | Vodafone IT
+|===

@@ -1,0 +1,26 @@
+= smsrouter
+Guy Kopa <gkopa@panachats.fr>
+:doctype: book
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: highlight.js
+:highlightjs-theme: github
+:sectlinks:
+:sectanchors:
+:imagesdir: images
+
+image:https://github.com/guykopa/smsrouter/actions/workflows/ci.yml/badge.svg[CI]
+
+Real-time SMS routing engine simulating a Mobile Virtual Network Operator (MVNO) core network component.
+Built with *Java 21*, *Spring Boot 3.2*, and *Apache Kafka*.
+
+include::getting-started.adoc[leveloffset=+1]
+
+include::architecture.adoc[leveloffset=+1]
+
+include::api.adoc[leveloffset=+1]
+
+include::kafka.adoc[leveloffset=+1]
+
+include::development.adoc[leveloffset=+1]

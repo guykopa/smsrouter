@@ -1,0 +1,66 @@
+= Development Guide
+
+== TDD cycle — mandatory for every class
+
+. *RED*: write failing tests before the class exists
+. *GREEN*: write the minimum code to make tests pass
+. *REFACTOR*: clean without breaking any test
+. Run `./mvnw test` after every GREEN and REFACTOR phase
+
+== Run tests
+
+[source,bash]
+----
+# Unit tests only (fast, no Kafka)
+./mvnw test
+
+# Full build including integration tests (embedded Kafka)
+./mvnw clean verify
+----
+
+== Test structure
+
+[cols="1,3", options="header"]
+|===
+| Package | Content
+| `unit/`        | Pure unit tests — fake adapters, zero Spring, zero Kafka
+| `integration/` | `@SpringBootTest` + `@EmbeddedKafka` — full context
+| `fixture/`     | Shared fakes: `FakeOperatorRegistry`, `FakeSmsPublisher`, `FakeSmsDelivery`
+|===
+
+== Project structure
+
+[source]
+----
+src/main/java/com/smsrouter/
+├── domain/
+│   ├── model/       ← Java records, no Spring
+│   ├── service/     ← PrefixResolver, SmsRoutingService
+│   └── exception/   ← UnroutableSmsException, OperatorUnavailableException
+├── port/            ← SmsPublisherPort, OperatorRegistryPort, SmsDeliveryPort
+├── adapter/
+│   ├── kafka/       ← KafkaSmsPublisher
+│   ├── registry/    ← InMemoryOperatorRegistry
+│   └── delivery/    ← SimulatedSmsDelivery
+├── application/     ← SendSmsUseCase, SmsRouterConfig
+└── controller/      ← SmsController, HomeController
+----
+
+== Build documentation
+
+[source,bash]
+----
+./mvnw asciidoctor:process-asciidoc
+# Output: target/generated-docs/index.html
+----
+
+== Docker
+
+[source,bash]
+----
+# Start infrastructure only
+docker compose -f docker/docker-compose.yml --env-file .env up zookeeper kafka kafka-ui -d
+
+# Start full stack (builds app image)
+docker compose -f docker/docker-compose.yml --env-file .env up
+----
