@@ -1,0 +1,77 @@
+= Kafka Topics & Events
+
+== Topics
+
+[cols="1,3", options="header"]
+|===
+| Topic | Content
+| `sms.inbound` | `SMS_RECEIVED` — one message per incoming SMS
+| `sms.events`  | `SMS_ROUTED`, `SMS_DELIVERED`, `SMS_RETRY`
+| `sms.dlq`     | `SMS_FAILED` — delivery failures and unroutable numbers
+|===
+
+== Event types
+
+[cols="1,1,3", options="header"]
+|===
+| Event | Topic | Published when
+| `SMS_RECEIVED`  | `sms.inbound` | SMS enters the system
+| `SMS_ROUTED`    | `sms.events`  | Operator resolved
+| `SMS_DELIVERED` | `sms.events`  | Delivery succeeded
+| `SMS_FAILED`    | `sms.dlq`     | Delivery failed or number unroutable
+|===
+
+== Event payload
+
+All events share the same `SmsEvent` structure:
+
+[source,json]
+----
+{
+  "eventType": "SMS_RECEIVED",
+  "smsId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "timestamp": 1777497354.941798487,
+  "payload": { }
+}
+----
+
+=== SMS_RECEIVED
+
+[source,json]
+----
+{ "from": "+33612345678", "to": "+447911123456" }
+----
+
+=== SMS_ROUTED
+
+[source,json]
+----
+{ "operator": "EE", "prefix": "+44" }
+----
+
+=== SMS_DELIVERED
+
+[source,json]
+----
+{ "operator": "EE", "status": "DELIVERED", "latencyMs": 32 }
+----
+
+=== SMS_FAILED (delivery)
+
+[source,json]
+----
+{ "operator": "EE", "status": "FAILED", "latencyMs": 28 }
+----
+
+=== SMS_FAILED (unroutable)
+
+[source,json]
+----
+{ "reason": "UNROUTABLE", "phoneNumber": "+99999999999" }
+----
+
+== Kafka UI
+
+Visualise all topics and messages in real time at `http://localhost:8090`.
+
+Cluster configured: `smsrouter-local` → `kafka:29092`.

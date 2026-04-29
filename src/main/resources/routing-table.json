@@ -1,0 +1,32 @@
+[
+  {
+    "prefix": "+44",
+    "country": "UK",
+    "primaryOperator": "EE",
+    "fallbackOperator": "Vodafone UK"
+  },
+  {
+    "prefix": "+33",
+    "country": "FR",
+    "primaryOperator": "Orange FR",
+    "fallbackOperator": "SFR"
+  },
+  {
+    "prefix": "+49",
+    "country": "DE",
+    "primaryOperator": "Deutsche Telekom",
+    "fallbackOperator": "Vodafone DE"
+  },
+  {
+    "prefix": "+1",
+    "country": "US",
+    "primaryOperator": "AT&T",
+    "fallbackOperator": "T-Mobile US"
+  },
+  {
+    "prefix": "+39",
+    "country": "IT",
+    "primaryOperator": "TIM",
+    "fallbackOperator": "Vodafone IT"
+  }
+]
